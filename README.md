@@ -27,6 +27,12 @@ Require this package as a development dependency with [Composer](https://getcomp
 composer require --dev om4/git-version-switcher
 ```
 
+Alternatively you can use it as global dependency.
+
+```bash
+composer global require om4/git-version-switcher
+```
+
 ## Usage
 
 With `-h` or `--help` yo can get usage information:
