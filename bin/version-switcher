@@ -26,10 +26,16 @@ function get_path() {
 
 # eepecting one argument 'path/to/repo'
 composer_install_all() {
-  if [ -f "composer.json" ]; then
-    echo "Install composer packages (include dev) to $1"
-    composer install --no-suggest --quiet
-  fi
+    if [ "$(git check-ignore vendor)" == "vendor" ]; then
+        if [ -d vendor ]; then
+            echo "Delete composer packages from $1"
+            rm -rf vendor
+        fi
+        if [ -f "composer.json" ]; then
+            echo "Install composer packages (include dev) to $1"
+            composer install --no-suggest --quiet
+        fi
+    fi
 }
 
 # expecting one argument 'path/to/repo:checkout-target'
