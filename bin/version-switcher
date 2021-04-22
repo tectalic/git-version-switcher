@@ -14,17 +14,25 @@ function get_usage() {
     echo "   target           Colon (:) separated path and branch/commit/tag"
 }
 
-# eexpecting one argument 'path/to/repo'
+# eepecting one argument 'path/to/repo'
 function get_path() {
     if [ ! -d "$1" ]; then
-        echo "target path ($1) not exists. Aborting"
+        echo "Target path ($1) not exists. Aborting"
         exit 1
     else
         cd "$1" && pwd
     fi
 }
 
-# eexpecting one argument 'path/to/repo:checkout-target'
+# eepecting one argument 'path/to/repo'
+composer_install_all() {
+  if [ -f "composer.json" ]; then
+    echo "Install composer packages (include dev) to $1"
+    composer install --no-suggest --quiet
+  fi
+}
+
+# expecting one argument 'path/to/repo:checkout-target'
 do_checkout() {
     # split
     REPO_PATH=$(echo "$1" | cut -f1 -d':')
@@ -38,6 +46,7 @@ do_checkout() {
     # checkout
     cd "$REPO_PATH" || exit 1
     git checkout -fq "$REPO_TARGET"
+    composer_install_all "$REPO_PATH"
     REPO_HEAD=$(git describe --tags --always)
     echo -e "$CYAN$(cd "$REPO_PATH" && pwd): $YELLOW$REPO_HEAD$NC "
 }
