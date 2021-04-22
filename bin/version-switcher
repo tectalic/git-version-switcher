@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+VERBOSE_OUTPUT=false
+CWD=$PWD
+NC="\033[0m"
+YELLOW="\033[0;33m"
+GREEN="\033[0;32m"
+CYAN="\033[0;36m"
+
+function get_usage() {
+    echo "Usage: $(basename "$0") [-v] <target1> [target2…]" 2>&1
+    echo "Checkout specific branch/commit/tag on targets:"
+    echo "   -v | --verbose   Verbose output"
+    echo "   target           Colon (:) separated path and branch/commit/tag"
+}
+
+# eexpecting one argument 'path/to/repo'
+function get_path() {
+    if [ ! -d "$1" ]; then
+        echo "target path ($1) not exists. Aborting"
+        exit 1
+    else
+        cd "$1" && pwd
+    fi
+}
+
+# eexpecting one argument 'path/to/repo:checkout-target'
+do_checkout() {
+    # split
+    REPO_PATH=$(echo "$1" | cut -f1 -d':')
+    REPO_TARGET=$(echo "$1" | cut -f2 -d':')
+
+    # test
+    if [ ! -d "$REPO_PATH" ]; then
+        echo "target path ($REPO_PATH) not exists. Aborting"
+        exit 1
+    fi
+    # checkout
+    cd "$REPO_PATH" || exit 1
+    git checkout -fq "$REPO_TARGET"
+    REPO_HEAD=$(git describe --tags --always)
+    echo -e "$CYAN$(cd "$REPO_PATH" && pwd): $YELLOW$REPO_HEAD$NC "
+}
+
+get_phpunit_vers() {
+    if [ -f "$CWD/vendor/bin/phpunit" ]; then
+        PU=$("$CWD/vendor/bin/phpunit" --version | awk '{print $2}')
+    elif command -v phpunit >/dev/null; then
+        PU=$("phpunit" --version | awk '{print $2}')
+    else
+        PU="n/a"
+    fi
+    echo $PU
+}
+
+echo_additional_info() {
+    PHP_V=$(php -r "echo PHP_VERSION, \"\n\";")
+    if php -i | grep -q "xdebug support"; then XD=enabled; else XD=disabled; fi
+    PU=$(get_phpunit_vers)
+    echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
+}
+
+while [ -n "$1" ]; do
+    case "$1" in
+    --verbose | -v)
+        VERBOSE_OUTPUT=true
+        ;;
+    --help | -h)
+        get_usage
+        exit
+        ;;
+    *)
+        do_checkout "$1"
+        ;;
+    esac
+    shift
+done
+
+if $VERBOSE_OUTPUT; then
+    echo_additional_info
+fi
