@@ -26,15 +26,17 @@ function get_path() {
 
 # eepecting one argument 'path/to/repo'
 composer_install_all() {
-    if [ "$(git check-ignore vendor)" == "vendor" ]; then
-        if [ -d vendor ]; then
-            echo "Delete composer packages from $1"
-            rm -rf vendor
-        fi
-        if [ -f "composer.json" ]; then
-            echo "Install composer packages (include dev) to $1"
-            composer install --no-suggest --quiet
-        fi
+    if [ "$(git check-ignore vendor)" == "vendor" ] && [ -d vendor ]; then
+        echo "Delete composer packages from $1"
+        rm -rf vendor
+    fi
+    if [ "$(git check-ignore composer.lock)" == "composer.lock" ] && [ -f composer.lock ]; then
+        echo "Delete composer.lock from $1"
+        rm -rf composer.lock
+    fi
+    if [[ -f "composer.json" && (! -d vendor || ! -f composer.lock) ]]; then
+        echo "Install composer packages (include dev) to $1"
+        composer install --no-suggest --quiet
     fi
 }
 
