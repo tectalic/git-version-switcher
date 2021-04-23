@@ -56,7 +56,7 @@ do_checkout() {
     git checkout -fq "$REPO_TARGET"
     composer_install_all "$REPO_PATH"
     REPO_HEAD=$(git describe --tags --always)
-    echo -e "$CYAN$(cd "$REPO_PATH" && pwd): $YELLOW$REPO_HEAD$NC "
+    echo -e "$CYAN$(pwd): $YELLOW$REPO_HEAD$NC "
 }
 
 get_phpunit_vers() {
