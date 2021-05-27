@@ -5,6 +5,6 @@
     "license": "proprietary",
     "type": "library",
     "bin": [
-        "bin/version-switcher"
+        "bin/gvs"
     ]
 }
