@@ -30,7 +30,7 @@ checkout() {
     exit 1
   fi
 
-  cd "$REPO_PATH"  || exit 1
+  cd "$REPO_PATH" || exit 1
 
   # Delete composer dependencies from WooCommerce
   if $DO_CHECKOUT && [ -f woocommerce.php ]; then
@@ -44,7 +44,15 @@ checkout() {
   # Install composer dependencies for WooCommerce
   if $DO_CHECKOUT && [ -f woocommerce.php ]; then
     $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
+    ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
+    if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
+      composer self-update --1 --no-progress 2>/dev/null
+    fi
     composer install --no-suggest --no-dev --quiet
+    NEW_VERSION=$(composer --version | cut -d " " -f 3)
+    if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
+      composer self-update --rollback --no-progress
+    fi
   fi
 
   # Report target
