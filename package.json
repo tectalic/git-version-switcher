@@ -1,0 +1,17 @@
+{
+  "name": "git-version-switcher",
+  "version": "1.1.0",
+  "description": "Simple bash script to switch specific branch|commit|tag on target repositories.",
+  "homepage": "https://github.com/OM4/git-version-switcher",
+  "license": "MIT",
+  "author": {
+    "name": "Csaba Maulis",
+    "email": "csaba@om4.com.au"
+  },
+  "bin": {
+    "gvs": "./bin/gvs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
