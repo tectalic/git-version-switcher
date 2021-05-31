@@ -2,6 +2,8 @@
 
 VERBOSE_OUTPUT=false
 DO_CHECKOUT=true
+DO_UPDATE=false
+REPOSITORIES=()
 CWD=$PWD
 NC="\033[0m"
 YELLOW="\033[0;33m"
@@ -11,53 +13,12 @@ CYAN="\033[0;36m"
 function usage_info() {
   echo "git version switcher: Checkout specific branch|commit|tag on targets"
   echo
-  echo "Usage: $(basename "$0") [-h|-r|-v] <TARGET1> [TARGET2…]"
+  echo "Usage: $(basename "$0") [-h] [-u] [-r] [-v] <TARGET1> [TARGET2…]"
   echo "   -h | --help          Display this help message"
+  echo "   -u | --update        Update default remote (fetch)"
   echo "   -r | --report-only   Discard version switching, only report"
   echo "   -v | --verbose       Verbose output"
   echo "   TARGET               Path and branch|commit|tag separated by a colon (:)"
-}
-
-# @param 'path/to/repo:checkout-target'
-checkout() {
-  # Split param
-  REPO_PATH=$(echo "$1" | cut -f1 -d':')
-  REPO_TARGET=$(echo "$1" | cut -f2 -d':')
-
-  # Test path
-  if [ ! -d "$REPO_PATH" ]; then
-    echo "Target path ($REPO_PATH) not exists. Aborting"
-    exit 1
-  fi
-
-  cd "$REPO_PATH" || exit 1
-
-  # Delete composer dependencies from WooCommerce
-  if $DO_CHECKOUT && [ -f woocommerce.php ]; then
-    $VERBOSE_OUTPUT && echo "Delete composer packages from $(pwd)" || true
-    rm -f composer.lock && rm -rf vendor
-  fi
-
-  # Checkout target
-  $DO_CHECKOUT && git checkout -fq "$REPO_TARGET"
-
-  # Install composer dependencies for WooCommerce
-  if $DO_CHECKOUT && [ -f woocommerce.php ]; then
-    $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
-    ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
-    if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
-      composer self-update --1 --no-progress 2>/dev/null
-    fi
-    composer install --no-suggest --no-dev --quiet
-    NEW_VERSION=$(composer --version | cut -d " " -f 3)
-    if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
-      composer self-update --rollback --no-progress
-    fi
-  fi
-
-  # Report target
-  REPO_HEAD=$(git describe --tags --always)
-  echo -e "$CYAN$(pwd): $YELLOW$REPO_HEAD$NC "
 }
 
 get_phpunit_version() {
@@ -89,6 +50,9 @@ while [ -n "$1" ]; do
   --verbose | -v)
     VERBOSE_OUTPUT=true
     ;;
+  --update | -u)
+    DO_UPDATE=true
+    ;;
   --report-only | -r)
     DO_CHECKOUT=false
     ;;
@@ -97,10 +61,60 @@ while [ -n "$1" ]; do
     exit
     ;;
   *)
-    checkout "$1"
+    REPOSITORIES+=("$1")
     ;;
   esac
   shift
+done
+
+for REPO in "${REPOSITORIES[@]}"; do
+  # Split param
+  REPO_PATH=$(echo "$REPO" | cut -f1 -d':')
+  REPO_TARGET=$(echo "$REPO" | cut -f2 -d':')
+
+  # Test path
+  if [ ! -d "$REPO_PATH" ]; then
+    echo "Target path ($REPO_PATH) not exists. Aborting"
+    exit 1
+  fi
+
+  cd "$REPO_PATH" || exit 1
+
+  # Update (fetch)
+  if $DO_UPDATE; then
+    $VERBOSE_OUTPUT && echo "Update from remote (fetch) for $(pwd)" || true
+    git fetch --tags --force
+  fi
+
+  # Checkout
+  if $DO_CHECKOUT; then
+    # Delete composer dependencies from WooCommerce
+    if [ -f woocommerce.php ]; then
+      $VERBOSE_OUTPUT && echo "Delete composer packages from $(pwd)" || true
+      rm -f composer.lock && rm -rf vendor
+    fi
+
+    # Checkout target
+    git checkout --force --quiet "$REPO_TARGET"
+
+    # Install composer dependencies for WooCommerce
+    if [ -f woocommerce.php ]; then
+      $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
+      ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
+      if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
+        composer self-update --1 --no-progress 2>/dev/null
+      fi
+      composer install --no-suggest --no-dev --quiet
+      NEW_VERSION=$(composer --version | cut -d " " -f 3)
+      if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
+        composer self-update --rollback --no-progress
+      fi
+    fi
+  fi
+
+  # Report target
+  REPO_HEAD=$(git describe --tags --always)
+  echo -e "$CYAN$(pwd): $YELLOW$REPO_HEAD$NC "
 done
 
 if $VERBOSE_OUTPUT; then
