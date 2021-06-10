@@ -99,15 +99,18 @@ for REPO in "${REPOSITORIES[@]}"; do
 
     # Install composer dependencies for WooCommerce
     if [ -f woocommerce.php ]; then
-      $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
       ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
+      COMPOSER_SELF_UPDATE="composer self-update --no-progress" \
+        && [ -x "$(which composer)" ] \
+        && COMPOSER_SELF_UPDATE="sudo $COMPOSER_SELF_UPDATE"
       if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
-        composer self-update --1 --no-progress 2>/dev/null
+        $COMPOSER_SELF_UPDATE --1 2>/dev/null
       fi
+      $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
       composer install --no-suggest --no-dev --quiet
       NEW_VERSION=$(composer --version | cut -d " " -f 3)
       if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
-        composer self-update --rollback --no-progress
+        $COMPOSER_SELF_UPDATE --rollback
       fi
     fi
   fi
