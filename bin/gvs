@@ -39,6 +39,13 @@ environment_info() {
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
+composer_self_update() {
+  COMMAND="composer self-update --no-progress --$1 2>/dev/null"
+  if ! $COMMAND; then
+    sudo "$COMMAND"
+  fi
+}
+
 if [ $# -lt 1 ]; then
   echo Arguments missing!
   usage_info
@@ -100,17 +107,16 @@ for REPO in "${REPOSITORIES[@]}"; do
     # Install composer dependencies for WooCommerce
     if [ -f woocommerce.php ]; then
       ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
-      COMPOSER_SELF_UPDATE="composer self-update --no-progress" \
-        && [ -x "$(which composer)" ] \
-        && COMPOSER_SELF_UPDATE="sudo $COMPOSER_SELF_UPDATE"
       if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
-        $COMPOSER_SELF_UPDATE --1 2>/dev/null
+        echo "Switching composer version to install WooCommerce dependencies"
+        composer_self_update 1
       fi
       $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
       composer install --no-suggest --no-dev --quiet
       NEW_VERSION=$(composer --version | cut -d " " -f 3)
       if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
-        $COMPOSER_SELF_UPDATE --rollback
+        echo "Switching composer version to install WooCommerce dependencies"
+        composer_self_update rollback
       fi
     fi
   fi
