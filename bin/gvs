@@ -134,7 +134,12 @@ for REPO in "${REPOSITORIES[@]}"; do
         $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleted."
       fi
       $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
-      composer install --no-suggest --no-dev --quiet
+      if composer install --no-suggest --no-dev --quiet ; then
+        $VERBOSE_OUTPUT && echo "Composer install completed."
+      else
+        $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
+        composer install --no-suggest --no-dev --quiet --ignore-platform-reqs
+      fi
       cd "$REPO_PATH"
      fi
     done
