@@ -95,42 +95,50 @@ for REPO in "${REPOSITORIES[@]}"; do
 
   # Checkout
   if $DO_CHECKOUT; then
-    # Delete composer dependencies from WooCommerce
-    if [ -f plugins/woocommerce/woocommerce.php ] || [ -f woocommerce.php ]; then
-      if [ -f plugins/woocommerce/woocommerce.php ]; then
-        # WooCommerce 6.0+ monorepo where composer.json is in plugins/woocommerce/composer.json
-        cd plugins/woocommerce
-      fi
-      $VERBOSE_OUTPUT && echo "Delete composer packages from $(pwd)" || true
-      rm -f composer.lock && rm -rf vendor
-      cd "$REPO_PATH"
-    fi
-
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
 
-    # Install composer dependencies for WooCommerce
-    if [ -f plugins/woocommerce/woocommerce.php ] || [ -f woocommerce.php ]; then
-      # Remove untracked files/directories to ensure monorepo specific files aren't left behind
-      git clean -fxdq
-      ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
-      if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
-        echo "Switching composer version to install WooCommerce dependencies"
-        composer_self_update 1
+
+    # Directories to look for a composer.json file in
+    declare -a dirs=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
+    for dir in "${dirs[@]}"
+    do
+     if [ -f "$dir/composer.json"  ]; then
+      $VERBOSE_OUTPUT && echo "composer.json exists at $dir/composer.json"
+      cd "$dir"
+
+      # Clean up files and then install composer dependencies
+
+      if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+        $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleting."
+        rm -f "$dir/composer.lock"
       fi
-      if [ -f plugins/woocommerce/woocommerce.php ]; then
-        # WooCommerce 6.0+ monorepo where composer.json is in plugins/woocommerce/composer.json
-        cd plugins/woocommerce
+
+      if [ -d "$dir/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
+        rm -rf "$dir/plugins"
+        $VERBOSE_OUTPUT && echo "$dir/plugins from WC monorepo deleted."
+      fi
+      if [ -d "$dir/vendor" ]; then
+        $VERBOSE_OUTPUT && echo "$dir/vendor exists"
+        if [ $(git ls-files vendor | wc -l) -ne "0" ]; then
+          $VERBOSE_OUTPUT && echo "$dir/vendor is committed to git, so no composer install required. Skipping."
+          break
+        else
+          rm -rf "$dir/vendor"
+          $VERBOSE_OUTPUT && echo "$dir/vendor is not committed to git. Deleted."
+        fi
+      fi
+
+      if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+        rm -f "$dir/composer.lock"
+        $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleted."
       fi
       $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
       composer install --no-suggest --no-dev --quiet
       cd "$REPO_PATH"
-      NEW_VERSION=$(composer --version | cut -d " " -f 3)
-      if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
-        echo "Switching composer version to install WooCommerce dependencies"
-        composer_self_update rollback
-      fi
-    fi
+     fi
+    done
+
   fi
 
   # Report target
