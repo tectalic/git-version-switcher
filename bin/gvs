@@ -96,23 +96,35 @@ for REPO in "${REPOSITORIES[@]}"; do
   # Checkout
   if $DO_CHECKOUT; then
     # Delete composer dependencies from WooCommerce
-    if [ -f woocommerce.php ]; then
+    if [ -f plugins/woocommerce/woocommerce.php ] || [ -f woocommerce.php ]; then
+      if [ -f plugins/woocommerce/woocommerce.php ]; then
+        # WooCommerce 6.0+ monorepo where composer.json is in plugins/woocommerce/composer.json
+        cd plugins/woocommerce
+      fi
       $VERBOSE_OUTPUT && echo "Delete composer packages from $(pwd)" || true
       rm -f composer.lock && rm -rf vendor
+      cd "$REPO_PATH"
     fi
 
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
 
     # Install composer dependencies for WooCommerce
-    if [ -f woocommerce.php ]; then
+    if [ -f plugins/woocommerce/woocommerce.php ] || [ -f woocommerce.php ]; then
+      # Remove untracked files/directories to ensure monorepo specific files aren't left behind
+      git clean -fxdq
       ORIGINAL_VERSION=$(composer --version | cut -d " " -f 3)
       if [ "${ORIGINAL_VERSION::1}" == "2" ]; then
         echo "Switching composer version to install WooCommerce dependencies"
         composer_self_update 1
       fi
+      if [ -f plugins/woocommerce/woocommerce.php ]; then
+        # WooCommerce 6.0+ monorepo where composer.json is in plugins/woocommerce/composer.json
+        cd plugins/woocommerce
+      fi
       $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
       composer install --no-suggest --no-dev --quiet
+      cd "$REPO_PATH"
       NEW_VERSION=$(composer --version | cut -d " " -f 3)
       if [ "${ORIGINAL_VERSION::1}" != "${NEW_VERSION::1}" ]; then
         echo "Switching composer version to install WooCommerce dependencies"
