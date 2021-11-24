@@ -39,6 +39,13 @@ environment_info() {
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
+remove_uncommitted_composer_lock_file() {
+  if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+    $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleting."
+    rm -f "$DIR/composer.lock"
+  fi
+}
+
 if [ $# -lt 1 ]; then
   echo Arguments missing!
   usage_info
@@ -99,11 +106,7 @@ for REPO in "${REPOSITORIES[@]}"; do
         cd "$DIR" || exit 1
 
         # Clean up files and then install composer dependencies
-
-        if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-          $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleting."
-          rm -f "$DIR/composer.lock"
-        fi
+        remove_uncommitted_composer_lock_file
 
         if [ -d "$DIR/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
           rm -rf "$DIR/plugins"
@@ -120,10 +123,8 @@ for REPO in "${REPOSITORIES[@]}"; do
           fi
         fi
 
-        if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-          rm -f "$DIR/composer.lock"
-          $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleted."
-        fi
+        remove_uncommitted_composer_lock_file
+
         $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
         if composer install --no-suggest --no-dev --quiet; then
           $VERBOSE_OUTPUT && echo "Composer install completed."
