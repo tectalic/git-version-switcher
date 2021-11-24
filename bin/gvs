@@ -94,35 +94,35 @@ for REPO in "${REPOSITORIES[@]}"; do
     # Directories to look for a composer.json file in
     DIRS=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
     for DIR in "${DIRS[@]}"; do
-      if [ -f "$dir/composer.json" ]; then
-        $VERBOSE_OUTPUT && echo "composer.json exists at $dir/composer.json"
-        cd "$dir" || exit 1
+      if [ -f "$DIR/composer.json" ]; then
+        $VERBOSE_OUTPUT && echo "composer.json exists at $DIR/composer.json"
+        cd "$DIR" || exit 1
 
         # Clean up files and then install composer dependencies
 
-        if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-          $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleting."
-          rm -f "$dir/composer.lock"
+        if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+          $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleting."
+          rm -f "$DIR/composer.lock"
         fi
 
-        if [ -d "$dir/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
-          rm -rf "$dir/plugins"
-          $VERBOSE_OUTPUT && echo "$dir/plugins from WC monorepo deleted."
+        if [ -d "$DIR/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
+          rm -rf "$DIR/plugins"
+          $VERBOSE_OUTPUT && echo "$DIR/plugins from WC monorepo deleted."
         fi
-        if [ -d "$dir/vendor" ]; then
-          $VERBOSE_OUTPUT && echo "$dir/vendor exists"
+        if [ -d "$DIR/vendor" ]; then
+          $VERBOSE_OUTPUT && echo "$DIR/vendor exists"
           if [ $(git ls-files vendor | wc -l) -ne "0" ]; then
-            $VERBOSE_OUTPUT && echo "$dir/vendor is committed to git, so no composer install required. Skipping."
+            $VERBOSE_OUTPUT && echo "$DIR/vendor is committed to git, so no composer install required. Skipping."
             break
           else
-            rm -rf "$dir/vendor"
-            $VERBOSE_OUTPUT && echo "$dir/vendor is not committed to git. Deleted."
+            rm -rf "$DIR/vendor"
+            $VERBOSE_OUTPUT && echo "$DIR/vendor is not committed to git. Deleted."
           fi
         fi
 
-        if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-          rm -f "$dir/composer.lock"
-          $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleted."
+        if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+          rm -f "$DIR/composer.lock"
+          $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleted."
         fi
         $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
         if composer install --no-suggest --no-dev --quiet; then
