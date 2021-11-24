@@ -98,50 +98,48 @@ for REPO in "${REPOSITORIES[@]}"; do
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
 
-
     # Directories to look for a composer.json file in
     declare -a dirs=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
-    for dir in "${dirs[@]}"
-    do
-     if [ -f "$dir/composer.json"  ]; then
-      $VERBOSE_OUTPUT && echo "composer.json exists at $dir/composer.json"
-      cd "$dir"
+    for dir in "${dirs[@]}"; do
+      if [ -f "$dir/composer.json" ]; then
+        $VERBOSE_OUTPUT && echo "composer.json exists at $dir/composer.json"
+        cd "$dir"
 
-      # Clean up files and then install composer dependencies
+        # Clean up files and then install composer dependencies
 
-      if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-        $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleting."
-        rm -f "$dir/composer.lock"
-      fi
-
-      if [ -d "$dir/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
-        rm -rf "$dir/plugins"
-        $VERBOSE_OUTPUT && echo "$dir/plugins from WC monorepo deleted."
-      fi
-      if [ -d "$dir/vendor" ]; then
-        $VERBOSE_OUTPUT && echo "$dir/vendor exists"
-        if [ $(git ls-files vendor | wc -l) -ne "0" ]; then
-          $VERBOSE_OUTPUT && echo "$dir/vendor is committed to git, so no composer install required. Skipping."
-          break
-        else
-          rm -rf "$dir/vendor"
-          $VERBOSE_OUTPUT && echo "$dir/vendor is not committed to git. Deleted."
+        if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+          $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleting."
+          rm -f "$dir/composer.lock"
         fi
-      fi
 
-      if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
-        rm -f "$dir/composer.lock"
-        $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleted."
+        if [ -d "$dir/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
+          rm -rf "$dir/plugins"
+          $VERBOSE_OUTPUT && echo "$dir/plugins from WC monorepo deleted."
+        fi
+        if [ -d "$dir/vendor" ]; then
+          $VERBOSE_OUTPUT && echo "$dir/vendor exists"
+          if [ $(git ls-files vendor | wc -l) -ne "0" ]; then
+            $VERBOSE_OUTPUT && echo "$dir/vendor is committed to git, so no composer install required. Skipping."
+            break
+          else
+            rm -rf "$dir/vendor"
+            $VERBOSE_OUTPUT && echo "$dir/vendor is not committed to git. Deleted."
+          fi
+        fi
+
+        if [ -f "$dir/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+          rm -f "$dir/composer.lock"
+          $VERBOSE_OUTPUT && echo "$dir/composer.lock is not committed to git. Deleted."
+        fi
+        $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
+        if composer install --no-suggest --no-dev --quiet; then
+          $VERBOSE_OUTPUT && echo "Composer install completed."
+        else
+          $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
+          composer install --no-suggest --no-dev --quiet --ignore-platform-reqs
+        fi
+        cd "$REPO_PATH"
       fi
-      $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
-      if composer install --no-suggest --no-dev --quiet ; then
-        $VERBOSE_OUTPUT && echo "Composer install completed."
-      else
-        $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
-        composer install --no-suggest --no-dev --quiet --ignore-platform-reqs
-      fi
-      cd "$REPO_PATH"
-     fi
     done
 
   fi
