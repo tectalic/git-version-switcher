@@ -99,11 +99,11 @@ for REPO in "${REPOSITORIES[@]}"; do
     git checkout --force --quiet "$REPO_TARGET"
 
     # Directories to look for a composer.json file in
-    declare -a dirs=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
-    for dir in "${dirs[@]}"; do
+    DIRS=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
+    for DIR in "${DIRS[@]}"; do
       if [ -f "$dir/composer.json" ]; then
         $VERBOSE_OUTPUT && echo "composer.json exists at $dir/composer.json"
-        cd "$dir"
+        cd "$dir" || exit 1
 
         # Clean up files and then install composer dependencies
 
@@ -138,7 +138,6 @@ for REPO in "${REPOSITORIES[@]}"; do
           $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
           composer install --no-suggest --no-dev --quiet --ignore-platform-reqs
         fi
-        cd "$REPO_PATH"
       fi
     done
 
