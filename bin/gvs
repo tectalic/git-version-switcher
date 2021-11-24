@@ -39,13 +39,6 @@ environment_info() {
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
-composer_self_update() {
-  COMMAND="composer self-update --no-progress --${1} 2>/dev/null"
-  if ! $COMMAND; then
-    sudo "$COMMAND"
-  fi
-}
-
 if [ $# -lt 1 ]; then
   echo Arguments missing!
   usage_info
