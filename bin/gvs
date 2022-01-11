@@ -45,6 +45,10 @@ remove_uncommitted_composer_lock_file() {
     rm -f "$DIR/composer.lock"
   fi
 }
+remove_vendor() {
+  rm -rf "$DIR/vendor"
+  $VERBOSE_OUTPUT && echo "$DIR/vendor deleted."
+}
 
 if [ $# -lt 1 ]; then
   echo Arguments missing!
@@ -113,13 +117,16 @@ for REPO in "${REPOSITORIES[@]}"; do
           $VERBOSE_OUTPUT && echo "$DIR/plugins from WC monorepo deleted."
         fi
         if [ -d "$DIR/vendor" ]; then
-          $VERBOSE_OUTPUT && echo "$DIR/vendor exists"
-          if [ $(git status --porcelain vendor | wc -l) -eq "0" ]; then
+          $VERBOSE_OUTPUT && echo "$DIR/vendor exists."
+          if [ ! -f "$DIR/vendor/autoload.php" ] && [ ! -f "$DIR/vendor/autoload_packages.php" ]; then
+            # Older WooCommerce versions such as 4.7.x have vendor committed, but without the necessary dependencies.
+            $VERBOSE_OUTPUT && echo "$DIR/vendor/ has no autoloader file."
+            remove_vendor
+          elif [ $(git status --porcelain vendor | wc -l) -eq "0" ]; then
             $VERBOSE_OUTPUT && echo "$DIR/vendor is committed to git, so no composer install required. Skipping."
             break
           else
-            rm -rf "$DIR/vendor"
-            $VERBOSE_OUTPUT && echo "$DIR/vendor is not committed to git. Deleted."
+            remove_vendor
           fi
         fi
 
