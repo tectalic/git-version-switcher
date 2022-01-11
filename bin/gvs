@@ -40,7 +40,7 @@ environment_info() {
 }
 
 remove_uncommitted_composer_lock_file() {
-  if [ -f "$DIR/composer.lock" ] && [ $(git ls-files composer.lock | wc -l) -eq "0" ]; then
+  if [ -f "$DIR/composer.lock" ] && [ $(git status --porcelain composer.lock | wc -l) -ne "0" ]; then
     $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleting."
     rm -f "$DIR/composer.lock"
   fi
@@ -108,13 +108,13 @@ for REPO in "${REPOSITORIES[@]}"; do
         # Clean up files and then install composer dependencies
         remove_uncommitted_composer_lock_file
 
-        if [ -d "$DIR/plugins" ] && [ $(git status --porcelain | grep plugins/ | wc -l) -ne "0" ]; then
+        if [ -d "$DIR/plugins" ] && [ $(git status --porcelain | grep "plugins/" | wc -l) -ne "0" ]; then
           rm -rf "$DIR/plugins"
           $VERBOSE_OUTPUT && echo "$DIR/plugins from WC monorepo deleted."
         fi
         if [ -d "$DIR/vendor" ]; then
           $VERBOSE_OUTPUT && echo "$DIR/vendor exists"
-          if [ $(git ls-files vendor | wc -l) -ne "0" ]; then
+          if [ $(git status --porcelain vendor | wc -l) -eq "0" ]; then
             $VERBOSE_OUTPUT && echo "$DIR/vendor is committed to git, so no composer install required. Skipping."
             break
           else
