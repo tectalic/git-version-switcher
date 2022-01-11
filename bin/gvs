@@ -137,7 +137,8 @@ for REPO in "${REPOSITORIES[@]}"; do
           $VERBOSE_OUTPUT && echo "Composer install completed."
         else
           $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
-          composer install --no-suggest --no-dev --quiet --ignore-platform-reqs
+          composer install --no-suggest --no-dev --quiet --ignore-platform-reqs --no-interaction
+          $VERBOSE_OUTPUT && echo "Alternative composer install completed."
         fi
       fi
     done
