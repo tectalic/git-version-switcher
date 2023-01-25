@@ -10,7 +10,7 @@ YELLOW="\033[0;33m"
 GREEN="\033[0;32m"
 CYAN="\033[0;36m"
 
-function usage_info() {
+function echo_usage_info() {
   echo "git version switcher: Checkout specific branch|commit|tag on targets"
   echo
   echo "Usage: $(basename "$0") [-h] [-u] [-r] [-v] <TARGET1> [TARGET2…]"
@@ -21,6 +21,12 @@ function usage_info() {
   echo "   TARGET               Path and branch|commit|tag separated by a colon (:)"
 }
 
+verbose_only_echo() {
+  if $VERBOSE_OUTPUT; then
+    echo "$@"
+  fi
+}
+
 get_phpunit_version() {
   if [ -f "$CWD/vendor/bin/phpunit" ]; then
     PU=$("$CWD/vendor/bin/phpunit" --version | awk '{print $2}')
@@ -29,30 +35,51 @@ get_phpunit_version() {
   else
     PU="N/A"
   fi
-  echo $PU
+  echo "$PU"
 }
 
-environment_info() {
+echo_environment_info() {
   PHP_V=$(php -r "echo PHP_VERSION, \"\n\";")
   if php -i | grep -q "xdebug support"; then XD=enabled; else XD=disabled; fi
   PU=$(get_phpunit_version)
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
-remove_uncommitted_composer_lock_file() {
-  if [ -f "$DIR/composer.lock" ] && [ $(git status --porcelain composer.lock | wc -l) -ne "0" ]; then
-    $VERBOSE_OUTPUT && echo "$DIR/composer.lock is not committed to git. Deleting."
-    rm -f "$DIR/composer.lock"
+composer_install() {
+  # Directories to look for a composer.json file in.
+  if [ -f "$REPO_PATH/composer.json" ]; then
+    COMPOSER_DIR=$REPO_PATH
+  elif [ -f "$REPO_PATH/plugins/woocommerce/composer.json" ]; then
+    COMPOSER_DIR=$REPO_PATH/plugins/woocommerce
+  else
+    verbose_only_echo "No composer.json found in $REPO_PATH"
+    verbose_only_echo "No composer install needed."
+    return
   fi
-}
-remove_vendor() {
-  rm -rf "$DIR/vendor"
-  $VERBOSE_OUTPUT && echo "$DIR/vendor deleted."
+
+  cd "$COMPOSER_DIR" || exit 1
+  verbose_only_echo "$COMPOSER_DIR/composer.json exists."
+
+  if [ -d "vendor" ]; then
+    verbose_only_echo "$COMPOSER_DIR/vendor is committed to git."
+    verbose_only_echo "No composer install needed."
+    return
+  fi
+
+  verbose_only_echo "Install composer packages to $(pwd)"
+
+  if ! composer install --no-interaction --no-dev --quiet; then
+    verbose_only_echo "Composer install failed. Retrying with \`--ignore-platform-reqs.\`"
+    composer install --no-interaction --no-dev --quiet --ignore-platform-reqs --no-interaction
+    verbose_only_echo "Alternative composer install completed."
+  fi
+
+  verbose_only_echo "Composer install completed."
 }
 
 if [ $# -lt 1 ]; then
   echo Arguments missing!
-  usage_info
+  echo_usage_info
   exit 1
 fi
 
@@ -68,7 +95,7 @@ while [ -n "$1" ]; do
     DO_CHECKOUT=false
     ;;
   --help | -h)
-    usage_info
+    echo_usage_info
     exit
     ;;
   *)
@@ -93,56 +120,21 @@ for REPO in "${REPOSITORIES[@]}"; do
 
   # Update (fetch)
   if $DO_UPDATE; then
-    $VERBOSE_OUTPUT && echo "Update from remote (fetch) for $(pwd)" || true
+    verbose_only_echo "Update from remote (fetch) for $(pwd)"
     git fetch --tags --force
   fi
 
   # Checkout
   if $DO_CHECKOUT; then
+    # Reset to clean state.
+    # See: https://stackoverflow.com/a/1090316
+    git reset --hard
+    git clean -fxd
+
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
 
-    # Directories to look for a composer.json file in
-    DIRS=("$REPO_PATH" "$REPO_PATH/plugins/woocommerce")
-    for DIR in "${DIRS[@]}"; do
-      if [ -f "$DIR/composer.json" ]; then
-        $VERBOSE_OUTPUT && echo "composer.json exists at $DIR/composer.json"
-        cd "$DIR" || exit 1
-
-        # Clean up files and then install composer dependencies
-        remove_uncommitted_composer_lock_file
-
-        if [ -d "$DIR/plugins" ] && [ $(git status --porcelain | grep "plugins/" | wc -l) -ne "0" ]; then
-          rm -rf "$DIR/plugins"
-          $VERBOSE_OUTPUT && echo "$DIR/plugins from WC monorepo deleted."
-        fi
-        if [ -d "$DIR/vendor" ]; then
-          $VERBOSE_OUTPUT && echo "$DIR/vendor exists."
-          if [ ! -f "$DIR/vendor/autoload.php" ] && [ ! -f "$DIR/vendor/autoload_packages.php" ]; then
-            # Older WooCommerce versions such as 4.7.x have vendor committed, but without the necessary dependencies.
-            $VERBOSE_OUTPUT && echo "$DIR/vendor/ has no autoloader file."
-            remove_vendor
-          elif [ $(git status --porcelain vendor | wc -l) -eq "0" ]; then
-            $VERBOSE_OUTPUT && echo "$DIR/vendor is committed to git, so no composer install required. Skipping."
-            break
-          else
-            remove_vendor
-          fi
-        fi
-
-        remove_uncommitted_composer_lock_file
-
-        $VERBOSE_OUTPUT && echo "Install composer packages to $(pwd)" || true
-        if composer install --no-suggest --no-dev --quiet; then
-          $VERBOSE_OUTPUT && echo "Composer install completed."
-        else
-          $VERBOSE_OUTPUT && echo "Composer install failed. Retrying with --ignore-platform-reqs."
-          composer install --no-suggest --no-dev --quiet --ignore-platform-reqs --no-interaction
-          $VERBOSE_OUTPUT && echo "Alternative composer install completed."
-        fi
-      fi
-    done
-
+    composer_install
   fi
 
   # Report target
@@ -151,5 +143,5 @@ for REPO in "${REPOSITORIES[@]}"; do
 done
 
 if $VERBOSE_OUTPUT; then
-  environment_info
+  echo_environment_info
 fi
