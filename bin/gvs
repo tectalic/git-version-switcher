@@ -4,6 +4,7 @@ VERBOSE_OUTPUT=false
 DO_CHECKOUT=true
 DO_UPDATE=false
 REPOSITORIES=()
+WP_TEST_CONFIG=""
 CWD=$PWD
 NC="\033[0m"
 YELLOW="\033[0;33m"
@@ -19,6 +20,7 @@ function echo_usage_info() {
   echo "   -r | --report-only   Discard version switching, only report"
   echo "   -v | --verbose       Verbose output"
   echo "   TARGET               Path and branch|commit|tag separated by a colon (:)"
+  echo "   TARGET               A path and a branch|commit|tag separated by a colon (:)"
 }
 
 verbose_only_echo() {
@@ -45,7 +47,20 @@ echo_environment_info() {
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
-composer_install() {
+function collect_wp_test_config() {
+  if [ -f "wp-tests-config.php" ]; then
+    verbose_only_echo "Collect wp-tests-config.php."
+    WP_TEST_CONFIG=$(cat wp-tests-config.php)
+  fi
+}
+
+function restore_wp_test_config() {
+  if [ ! ${#WP_TEST_CONFIG} -eq 0 ]; then
+    verbose_only_echo "Restore wp-tests-config.php."
+    echo "$WP_TEST_CONFIG" >wp-tests-config.php
+  fi
+}
+
   # Directories to look for a composer.json file in.
   if [ -f "$REPO_PATH/composer.json" ]; then
     COMPOSER_DIR=$REPO_PATH
@@ -126,10 +141,16 @@ for REPO in "${REPOSITORIES[@]}"; do
 
   # Checkout
   if $DO_CHECKOUT; then
+    # Temporary store wp-tests-config.php content
+    collect_wp_test_config
+
     # Reset to clean state.
     # See: https://stackoverflow.com/a/1090316
     git reset --hard
     git clean -fxd
+
+    # Restore wp-tests-config.php if previously stored.
+    restore_wp_test_config
 
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
