@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=1.3.0
+VERSION=1.4.0-develop
 VERBOSE_OUTPUT=false
 DO_CHECKOUT=true
 DO_UPDATE=false
