@@ -50,14 +50,14 @@ function echo_environment_info() {
 
 function collect_wp_test_config() {
   if [ -f "wp-tests-config.php" ]; then
-    verbose_only_echo "Collect wp-tests-config.php."
+    echo "Collect wp-tests-config.php."
     WP_TEST_CONFIG=$(cat wp-tests-config.php)
   fi
 }
 
 function restore_wp_test_config() {
   if [ ! ${#WP_TEST_CONFIG} -eq 0 ]; then
-    verbose_only_echo "Restore wp-tests-config.php."
+    echo "Restore wp-tests-config.php."
     echo "$WP_TEST_CONFIG" >wp-tests-config.php
   fi
 }
