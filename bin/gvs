@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+VERSION=1.2.0
 VERBOSE_OUTPUT=false
 DO_CHECKOUT=true
 DO_UPDATE=false
 REPOSITORIES=()
+WP_TEST_CONFIG=""
 CWD=$PWD
 NC="\033[0m"
 YELLOW="\033[0;33m"
@@ -18,16 +20,17 @@ function echo_usage_info() {
   echo "   -u | --update        Update default remote (fetch)"
   echo "   -r | --report-only   Discard version switching, only report"
   echo "   -v | --verbose       Verbose output"
-  echo "   TARGET               Path and branch|commit|tag separated by a colon (:)"
+  echo "   -V | --version       Display version"
+  echo "   TARGET               A path and a branch|commit|tag separated by a colon (:)"
 }
 
-verbose_only_echo() {
+function verbose_only_echo() {
   if $VERBOSE_OUTPUT; then
     echo "$@"
   fi
 }
 
-get_phpunit_version() {
+function get_phpunit_version() {
   if [ -f "$CWD/vendor/bin/phpunit" ]; then
     PU=$("$CWD/vendor/bin/phpunit" --version | awk '{print $2}')
   elif command -v phpunit >/dev/null; then
@@ -38,14 +41,28 @@ get_phpunit_version() {
   echo "$PU"
 }
 
-echo_environment_info() {
+function echo_environment_info() {
   PHP_V=$(php -r "echo PHP_VERSION, \"\n\";")
   if php -i | grep -q "xdebug support"; then XD=enabled; else XD=disabled; fi
   PU=$(get_phpunit_version)
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
 
-composer_install() {
+function collect_wp_test_config() {
+  if [ -f "wp-tests-config.php" ]; then
+    echo "Collect wp-tests-config.php."
+    WP_TEST_CONFIG=$(cat wp-tests-config.php)
+  fi
+}
+
+function restore_wp_test_config() {
+  if [ ! ${#WP_TEST_CONFIG} -eq 0 ]; then
+    echo "Restore wp-tests-config.php."
+    echo "$WP_TEST_CONFIG" >wp-tests-config.php
+  fi
+}
+
+function composer_install() {
   # Directories to look for a composer.json file in.
   if [ -f "$REPO_PATH/composer.json" ]; then
     COMPOSER_DIR=$REPO_PATH
@@ -98,6 +115,10 @@ while [ -n "$1" ]; do
     echo_usage_info
     exit
     ;;
+  --version | -V)
+    echo "git version switcher: $(basename "$0") v$VERSION"
+    exit
+    ;;
   *)
     REPOSITORIES+=("$1")
     ;;
@@ -126,10 +147,16 @@ for REPO in "${REPOSITORIES[@]}"; do
 
   # Checkout
   if $DO_CHECKOUT; then
+    # Temporary store wp-tests-config.php content
+    collect_wp_test_config
+
     # Reset to clean state.
     # See: https://stackoverflow.com/a/1090316
     git reset --hard
     git clean -fxd
+
+    # Restore wp-tests-config.php if previously stored.
+    restore_wp_test_config
 
     # Checkout target
     git checkout --force --quiet "$REPO_TARGET"
