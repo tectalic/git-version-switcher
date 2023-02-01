@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+VERSION=1.2.0
 VERBOSE_OUTPUT=false
 DO_CHECKOUT=true
 DO_UPDATE=false
@@ -19,17 +20,17 @@ function echo_usage_info() {
   echo "   -u | --update        Update default remote (fetch)"
   echo "   -r | --report-only   Discard version switching, only report"
   echo "   -v | --verbose       Verbose output"
-  echo "   TARGET               Path and branch|commit|tag separated by a colon (:)"
+  echo "   -V | --version       Display version"
   echo "   TARGET               A path and a branch|commit|tag separated by a colon (:)"
 }
 
-verbose_only_echo() {
+function verbose_only_echo() {
   if $VERBOSE_OUTPUT; then
     echo "$@"
   fi
 }
 
-get_phpunit_version() {
+function get_phpunit_version() {
   if [ -f "$CWD/vendor/bin/phpunit" ]; then
     PU=$("$CWD/vendor/bin/phpunit" --version | awk '{print $2}')
   elif command -v phpunit >/dev/null; then
@@ -40,7 +41,7 @@ get_phpunit_version() {
   echo "$PU"
 }
 
-echo_environment_info() {
+function echo_environment_info() {
   PHP_V=$(php -r "echo PHP_VERSION, \"\n\";")
   if php -i | grep -q "xdebug support"; then XD=enabled; else XD=disabled; fi
   PU=$(get_phpunit_version)
@@ -61,6 +62,7 @@ function restore_wp_test_config() {
   fi
 }
 
+function composer_install() {
   # Directories to look for a composer.json file in.
   if [ -f "$REPO_PATH/composer.json" ]; then
     COMPOSER_DIR=$REPO_PATH
@@ -111,6 +113,10 @@ while [ -n "$1" ]; do
     ;;
   --help | -h)
     echo_usage_info
+    exit
+    ;;
+  --version | -V)
+    echo "git version switcher: $(basename "$0") v$VERSION"
     exit
     ;;
   *)
