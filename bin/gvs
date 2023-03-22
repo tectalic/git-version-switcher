@@ -126,48 +126,50 @@ while [ -n "$1" ]; do
   shift
 done
 
-for REPO in "${REPOSITORIES[@]}"; do
-  # Split param
-  REPO_PATH=$(echo "$REPO" | cut -f1 -d':')
-  REPO_TARGET=$(echo "$REPO" | cut -f2 -d':')
+if [ ${#REPOSITORIES[@]} -ne 0 ]; then
+  for REPO in "${REPOSITORIES[@]}"; do
+    # Split param
+    REPO_PATH=$(echo "$REPO" | cut -f1 -d':')
+    REPO_TARGET=$(echo "$REPO" | cut -f2 -d':')
 
-  # Test path
-  if [ ! -d "$REPO_PATH" ]; then
-    echo "Target path ($REPO_PATH) not exists. Aborting"
-    exit 1
-  fi
+    # Test path
+    if [ ! -d "$REPO_PATH" ]; then
+      echo "Target path ($REPO_PATH) not exists. Aborting"
+      exit 1
+    fi
 
-  cd "$REPO_PATH" || exit 1
+    cd "$REPO_PATH" || exit 1
 
-  # Update (fetch)
-  if $DO_UPDATE; then
-    verbose_only_echo "Update from remote (fetch) for $(pwd)"
-    git fetch --tags --force
-  fi
+    # Update (fetch)
+    if $DO_UPDATE; then
+      verbose_only_echo "Update from remote (fetch) for $(pwd)"
+      git fetch --tags --force
+    fi
 
-  # Checkout
-  if $DO_CHECKOUT; then
-    # Temporary store wp-tests-config.php content
-    collect_wp_test_config
+    # Checkout
+    if $DO_CHECKOUT; then
+      # Temporary store wp-tests-config.php content
+      collect_wp_test_config
 
-    # Reset to clean state.
-    # See: https://stackoverflow.com/a/1090316
-    git reset --hard
-    git clean -fxd
+      # Reset to clean state.
+      # See: https://stackoverflow.com/a/1090316
+      git reset --hard
+      git clean -fxd
 
-    # Restore wp-tests-config.php if previously stored.
-    restore_wp_test_config
+      # Restore wp-tests-config.php if previously stored.
+      restore_wp_test_config
 
-    # Checkout target
-    git checkout --force --quiet "$REPO_TARGET"
+      # Checkout target
+      git checkout --force --quiet "$REPO_TARGET"
 
-    composer_install
-  fi
+      composer_install
+    fi
 
-  # Report target
-  REPO_HEAD=$(git describe --tags --always)
-  echo -e "$CYAN$(pwd): $YELLOW$REPO_HEAD$NC "
-done
+    # Report target
+    REPO_HEAD=$(git describe --tags --always)
+    echo -e "$CYAN$(pwd): $YELLOW$REPO_HEAD$NC "
+  done
+fi
 
 if $VERBOSE_OUTPUT; then
   echo_environment_info
