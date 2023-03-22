@@ -88,7 +88,7 @@ function composer_install() {
 
   if ! composer install --no-interaction --no-dev --quiet; then
     verbose_only_echo "Composer install failed. Retrying with \`--ignore-platform-reqs.\`"
-    composer install --no-interaction --no-dev --quiet --ignore-platform-reqs --no-interaction
+    composer install --no-interaction --no-dev --quiet --ignore-platform-reqs
     verbose_only_echo "Alternative composer install completed."
   fi
 
