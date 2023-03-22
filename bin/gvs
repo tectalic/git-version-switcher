@@ -43,7 +43,7 @@ function get_phpunit_version() {
 
 function echo_environment_info() {
   PHP_V=$(php -r "echo PHP_VERSION, \"\n\";")
-  if php -i | grep -q "xdebug support"; then XD=enabled; else XD=disabled; fi
+  if php -v | grep -qi "xdebug"; then XD=enabled; else XD=disabled; fi
   PU=$(get_phpunit_version)
   echo -e "${GREEN}PHP: $YELLOW$PHP_V, ${GREEN}Xdebug: $YELLOW$XD, ${GREEN}PHPUnit: $YELLOW$PU$NC"
 }
