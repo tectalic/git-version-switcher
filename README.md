@@ -25,7 +25,7 @@ Example: `path/to/repo:1.2.3-beta.1`
 **Notes:**
 - You can use relative, absolute and home (~) paths.
 - If you were using a global variable for path, wrap it in curly braces ({}) to avoid interpreting the colon by the shell. Example: `${MY_PATH}:0.1.0`
-- This script reinstalls composer dependencies upon version switch if a target repository is [WooCommerce](https://github.com/woocommerce/woocommerce).
+- This script installs composer dependencies upon version switch if a target contains a `composer.json` file in the root directory or in the `plugins/woocommerce/` subdirectory.
 
 ## Installation
 
