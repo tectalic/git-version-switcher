@@ -14,7 +14,8 @@ Usage: gvs [-h] [-u] [-r] [-v] <TARGET1> [TARGET2…]
    -u | --update        Update default remote (fetch)
    -r | --report-only   Discard version switching, only report
    -v | --verbose       Verbose output
-   TARGET               Path and branch|commit|tag separated by a colon (:)
+   -V | --version       Display version
+   TARGET               A path and a branch|commit|tag separated by a colon (:)
 ```
 
 For 'target', pass one or more path and branch|commit|tag separated by a colon (:) to specify a target. The first part should be a path to a git repository; the second part is the target branch|commit|tag.
