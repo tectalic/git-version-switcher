@@ -41,7 +41,7 @@ Add this repository to your `composer.json` file.
     "repositories": [
         {
             "type": "git",
-            "url": "git@github.com:OM4/git-version-switcher.git"
+            "url": "git@github.com:tectalic/git-version-switcher.git"
         }
     ]
 ```
@@ -49,13 +49,13 @@ Add this repository to your `composer.json` file.
 Require this package as a development dependency with [Composer](https://getcomposer.org).
 
 ```bash
-composer require --dev om4/git-version-switcher
+composer require --dev tectalic/git-version-switcher
 ```
 
 Alternatively, you can install it globally.
 
 ```bash
-composer global require om4/git-version-switcher
+composer global require tectalic/git-version-switcher
 ```
 
 ### Via npm
@@ -63,13 +63,13 @@ composer global require om4/git-version-switcher
 Install this package as a development dependency with [npm](https://npmjs.com).
 
 ```bash
-npm install --D git+ssh://git@github.com/OM4/git-version-switcher.git
+npm install --D git+ssh://git@github.com/tectalic/git-version-switcher.git
 ```
 
 Alternatively, you can install it globally.
 
 ```bash
-npm install --g git+ssh://git@github.com/OM4/git-version-switcher.git
+npm install --g git+ssh://git@github.com/tectalic/git-version-switcher.git
 ```
 
 ## Requirements
