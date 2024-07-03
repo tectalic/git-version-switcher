@@ -2,7 +2,7 @@
   "name": "git-version-switcher",
   "version": "1.4.0",
   "description": "Simple bash script to switch specific branch|commit|tag on target repositories.",
-  "homepage": "https://github.com/tecatlic/git-version-switcher",
+  "homepage": "https://github.com/tectalic/git-version-switcher",
   "license": "MIT",
   "author": {
     "name": "Csaba Maulis",
